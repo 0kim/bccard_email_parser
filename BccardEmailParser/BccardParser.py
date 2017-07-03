@@ -4,11 +4,11 @@ import copy
 import sys
 from datetime import datetime
 
-v = sys.version_info.major
+pyver = sys.version_info.major
 
-if v == 2:
+if pyver == 2:
     from HTMLParser import HTMLParser
-elif v == 3:
+elif pyver == 3:
     from html.parser import HTMLParser
 else:
     raise Exception("Not supported Python version")
@@ -23,13 +23,13 @@ RECEIPT_FIELDS = {'amount': '사용금액',
                   'store_name': '가맹점명',
                   'type': '구분'}
 
-RECEIPT_INIT = {'amount': '',
-                'currency': '',
-                'card_name': '',
-                'card_installment': '',
-                'date': '',
-                'store_name': '',
-                'type': ''}
+RECEIPT_INIT = {'amount': None,
+                'currency': None,
+                'card_name': None,
+                'card_installment': None,
+                'date': None,
+                'store_name': None,
+                'type': None}
 
 
 class BccardHtmlParser(HTMLParser):
@@ -43,7 +43,7 @@ class BccardHtmlParser(HTMLParser):
     _curItem = ''
     _jump_next_tag_flag = False # if True, jump to next sibling tag(ex. td)
 
-    def __init__(self, receipt=RECEIPT_INIT):
+    def __init__(self, receipt):
         self._receipt = receipt
         self._ctx = {'status': 'init'}
         HTMLParser.__init__(self)
@@ -108,6 +108,7 @@ class BccardHtmlParser(HTMLParser):
 class BccardParser(object):
     _receipt = None
     _bc_html_parser = None
+    _encoding = None
 
     def __init__(self):
         pass
@@ -121,7 +122,13 @@ class BccardParser(object):
 
     def _post_process(self):
         # populate 'currency' and 'type'
-        amount_str = self._receipt['amount']
+
+        if pyver == 2:
+            amount_str = unicode(self._receipt['amount'], 'utf-8')
+        else:
+            amount_str = self._receipt['amount']
+
+        # print(unicode(amount_str, 'utf-8'))
         if amount_str[len(amount_str)-1:] == u'원':
             amount = self._strip_amount(amount_str[:len(amount_str) - 1])
             currency = 'KRW'
@@ -141,15 +148,29 @@ class BccardParser(object):
         if type == '국내':
             date = datetime.strptime(self._receipt['date'], DATETIME_FORMAT_LOCAL)
         elif type == '해외':
-            s = self._receipt['date']
-            date = datetime(year=int(s[0:4]), month=int(s[5:7]), day=int(s[8:10]),
-                            hour=int(s[12:14]), minute=int(s[15:17]), second=int(s[18:20]))
+
+            if pyver == 2:
+                s = unicode(self._receipt['date'], 'utf-8')
+            else:
+                s = self._receipt['date']
+
+            date = datetime(year=int(s[0:4]),
+                            month=int(s[5:7]),
+                            day=int(s[8:10]),
+                            hour=int(s[12:14]),
+                            minute=int(s[15:17]),
+                            second=int(s[18:20]))
         else:
             raise Exception('Unsupported type: ' + type)
 
         self._receipt['date'] = date
 
-    def parse(self, html):
+    def parse(self, html, encoding):
+        self._encoding = encoding
+        if pyver == 2:
+            if encoding != 'utf-8':
+                html = html.decode(encoding).encode('utf-8')
+
         self._receipt = copy.deepcopy(RECEIPT_INIT)
         self._bc_html_parser = BccardHtmlParser(self._receipt)
         self._bc_html_parser.feed(html)

@@ -18,7 +18,7 @@ parser = BccardParser.BccardParser()
 
 with open('email/authorization_domestic_krw.html', 'r') as f:
     html = f.read()
-    parser.parse(html)
+    parser.parse(html, 'euc-kr')
     print(parser.get_result())
 ```
 
