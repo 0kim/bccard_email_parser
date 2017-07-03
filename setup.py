@@ -4,7 +4,7 @@ from setuptools import setup
 setup(
    name="BC Card Email Parser",
    version='0.1.1',
-   py_modules=['bccard_email_parser/BccardParser'],
+   packages=['bccard_email_parser'],
    author='youngkim',
    author_email='me@younghun.kim',
    url='https://github.com/0kim/bccard_email_parser',
