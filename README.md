@@ -6,7 +6,7 @@ Parse the BC Card authorization email.
 Install
 -----
 ```bash
-# TBA
+pip install bccard-parser
 ```
 
 Usage
